@@ -16,6 +16,10 @@ thread_local! {
     static GLOBAL_CALLBACK: RefCell<Option<Box<dyn FnMut(Event)>>> = RefCell::new(None);
 }
 
+fn callback_run_loop() -> CFRunLoopRef {
+    unsafe { CFRunLoopGetCurrent() }
+}
+
 unsafe extern "C" fn raw_callback(
     _proxy: CGEventTapProxy,
     _type: CGEventType,
@@ -72,11 +76,26 @@ where
             return Err(ListenError::LoopSourceError);
         }
 
-        let current_loop = CFRunLoopGetMain();
+        let current_loop = callback_run_loop();
         CFRunLoopAddSource(current_loop, _loop, kCFRunLoopCommonModes);
 
         CGEventTapEnable(tap, true);
         CFRunLoopRun();
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn worker_listener_uses_its_own_run_loop() {
+        let main_loop = unsafe { CFRunLoopGetMain() } as usize;
+        let worker_loop = std::thread::spawn(|| callback_run_loop() as usize)
+            .join()
+            .unwrap();
+
+        assert_ne!(worker_loop, main_loop);
+    }
 }
