@@ -94,6 +94,7 @@ extern "C" {
     ) -> CFRunLoopSourceRef;
     pub fn CFRunLoopGetCurrent() -> CFRunLoopRef;
     pub fn CFRunLoopAddSource(rl: CFRunLoopRef, source: CFRunLoopSourceRef, mode: CFRunLoopMode);
+    // Only the worker-thread regression compares against the main run loop.
     #[cfg(test)]
     pub fn CFRunLoopGetMain() -> CFRunLoopRef;
     pub fn CGEventTapEnable(tap: CFMachPortRef, enable: bool);
